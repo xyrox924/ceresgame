@@ -26,6 +26,9 @@ target_include_directories(ceres PRIVATE
 target_compile_definitions(ceres PRIVATE
     $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>
 )
+set_target_properties(ceres PROPERTIES
+    WIN32_EXECUTABLE $<AND:$<PLATFORM_ID:Windows>,$<NOT:$<CONFIG:Debug>>>
+)
 
 macro(require_pkg_config)
     if(NOT PkgConfig_FOUND)
