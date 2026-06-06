@@ -42,8 +42,6 @@
     } \
 } while (0)
 
-#define vector_at(v, index) (v).data[index]
-
 #define vector_free(v) do \
 { \
     free((v).data); \

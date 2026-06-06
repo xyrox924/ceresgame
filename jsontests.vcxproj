@@ -149,6 +149,7 @@
     <ClCompile Include="cJSON.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="map.c" />
+    <ClCompile Include="resources.c" />
     <ClCompile Include="solid.c" />
     <ClCompile Include="texture.c" />
     <ClCompile Include="timer.c" />

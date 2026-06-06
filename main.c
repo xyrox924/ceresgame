@@ -1,25 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <stdbool.h>
 
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_mixer.h>
 
-#include "cJSON.h"
-
 #include "config.h"
 
 #include "gamestate.h"
 #include "resources.h"
-#include "cvector.h"
 #include "solid.h"
 #include "actor.h"
 #include "animation.h"
 #include "camera.h"
 #include "map.h"
-#include "timer.h"
 
 #define PLAYER_START_X (16.0f * 15.0f)
 #define PLAYER_START_Y 100.0f
@@ -29,6 +24,8 @@
 #define EXIT_FRAME_H 180
 #define EXIT_FRAME_TIME 120
 #define NEXT_DISPLAY_TIME 900
+#define LEVEL_1 1
+#define LEVEL_2 2
 
 // system
 SDL_Window *w;
@@ -36,27 +33,10 @@ SDL_Renderer *r;
 bool running = false;
 bool sdlReady = false;
 bool imgReady = false;
-bool audioReady = false;
 
 bool qPressed = false;
 char gameState = GS_TITLE;
-
-// resources
-Texture texSlime;
-Texture texMountains;
-Texture texTitle;
-Texture texGameover;
-Texture texPaused;
-Texture texBuildings;
-Texture texFire;
-Texture texExit;
-Texture texNext;
-Texture texTileset;
-
-Mix_Chunk *sfxOk;
-Mix_Chunk *sfxBam;
-Mix_Chunk *sfxGrass;
-Mix_Music *sfxWind;
+int currentLevel = LEVEL_1;
 
 // level
 Solid *bg;
@@ -66,13 +46,8 @@ Actor *a;
 Camera c;
 
 bool init();
-bool loadGameResources();
-void unloadGameResources();
-bool requireTexture(Texture t, const char *path);
-Mix_Chunk *loadSfx(const char *path);
-Mix_Music *loadMusic(const char *path);
-void playSfx(Mix_Chunk *sfx);
-void playMusic(Mix_Music *music);
+bool createGameObjects();
+void unloadGameObjects();
 void takeInput(SDL_Event e);
 void pollEvents();
 void update();
@@ -84,6 +59,7 @@ void updateLevelTransition();
 void renderGameWorld();
 void renderExitAnimation();
 void renderNextScreen();
+void renderWinScreen();
 void deinit();
 
 int main(int argc, char *argv[])
@@ -94,13 +70,21 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if (!loadGameResources())
+    if (!loadGameResources(r))
     {
+        deinit();
+        return 1;
+    }
+
+    if (!createGameObjects())
+    {
+        unloadGameObjects();
         unloadGameResources();
         deinit();
         return 1;
     }
 
+    currentLevel = LEVEL_1;
     running = loadLevel("res/map.tmj") && m && a;
     while (running)
     {
@@ -120,6 +104,7 @@ int main(int argc, char *argv[])
 
     printf("exiting game\n");
 
+    unloadGameObjects();
     unloadGameResources();
     deinit();
 
@@ -176,129 +161,21 @@ bool init()
     return true;
 }
 
-bool requireTexture(Texture t, const char *path)
+bool createGameObjects()
 {
-    if (!t.data)
-    {
-        printf("Required texture missing: %s\n", path);
-        return false;
-    }
-
-    return true;
-}
-
-Mix_Chunk *loadSfx(const char *path)
-{
-    Mix_Chunk *sfx;
-
-    if (!audioReady)
-    {
-        return NULL;
-    }
-
-    sfx = Mix_LoadWAV(path);
-    if (!sfx)
-    {
-        printf("Warning: failed to load sound %s: %s\n", path, Mix_GetError());
-    }
-
-    return sfx;
-}
-
-Mix_Music *loadMusic(const char *path)
-{
-    Mix_Music *music;
-
-    if (!audioReady)
-    {
-        return NULL;
-    }
-
-    music = Mix_LoadMUS(path);
-    if (!music)
-    {
-        printf("Warning: failed to load music %s: %s\n", path, Mix_GetError());
-    }
-
-    return music;
-}
-
-void playSfx(Mix_Chunk *sfx)
-{
-    if (audioReady && sfx)
-    {
-        if (Mix_PlayChannel(-1, sfx, 0) == -1)
-        {
-            printf("Warning: failed to play sound: %s\n", Mix_GetError());
-        }
-    }
-}
-
-void playMusic(Mix_Music *music)
-{
-    if (audioReady && music && Mix_PlayingMusic() == 0)
-    {
-        if (Mix_PlayMusic(music, -1) != 0)
-        {
-            printf("Warning: failed to play music: %s\n", Mix_GetError());
-        }
-    }
-}
-
-bool loadGameResources()
-{
-    bool ok = true;
-    Texture texPlayer;
-
-    texSlime = loadTexture(r, "res/slime.png");
-    texMountains = loadTexture(r, "res/mountains.png");
-    texTitle = loadTexture(r, "res/title.png");
-    texGameover = loadTexture(r, "res/gameover.png");
-    texPaused = loadTexture(r, "res/paused.png");
-    texBuildings = loadTexture(r, "res/buildings.png");
-    texFire = loadTexture(r, "res/fire.png");
-    texExit = loadTexture(r, "res/exit.png");
-    texNext = loadTexture(r, "res/next.png");
-    texTileset = loadTexture(r, "res/tiles.png");
-    texPlayer = loadTexture(r, "res/player.png");
-
-    if (!requireTexture(texSlime, "res/slime.png")) { ok = false; }
-    if (!requireTexture(texMountains, "res/mountains.png")) { ok = false; }
-    if (!requireTexture(texTitle, "res/title.png")) { ok = false; }
-    if (!requireTexture(texGameover, "res/gameover.png")) { ok = false; }
-    if (!requireTexture(texPaused, "res/paused.png")) { ok = false; }
-    if (!requireTexture(texBuildings, "res/buildings.png")) { ok = false; }
-    if (!requireTexture(texFire, "res/fire.png")) { ok = false; }
-    if (!requireTexture(texExit, "res/exit.png")) { ok = false; }
-    if (!requireTexture(texNext, "res/next.png")) { ok = false; }
-    if (!requireTexture(texTileset, "res/tiles.png")) { ok = false; }
-    if (!requireTexture(texPlayer, "res/player.png")) { ok = false; }
-
-    if (!ok)
-    {
-        destroyTexture(&texPlayer);
-        return false;
-    }
-
-    sfxOk = loadSfx("res/ok.wav");
-    sfxBam = loadSfx("res/bam.wav");
-    sfxGrass = loadSfx("res/grass.wav");
-    sfxWind = loadMusic("res/wind1.wav");
-
     bg = createSolid(0, -10, texMountains.w, texMountains.h, texMountains);
     bg2 = createSolid(0, 70, texMountains.w, texMountains.h, texBuildings);
     if (!bg || !bg2)
     {
-        destroyTexture(&texPlayer);
         return false;
     }
 
     a = createActor(PLAYER_START_X, PLAYER_START_Y, 16, 16, texPlayer);
     if (!a)
     {
-        destroyTexture(&texPlayer);
         return false;
     }
+    a->ownsTexture = false;
 
     a->w = 16;
     a->h = 21;
@@ -311,7 +188,7 @@ bool loadGameResources()
     return true;
 }
 
-void unloadGameResources()
+void unloadGameObjects()
 {
     if (m)
     {
@@ -337,22 +214,6 @@ void unloadGameResources()
         free(bg2);
         bg2 = NULL;
     }
-
-    if (sfxOk) { Mix_FreeChunk(sfxOk); sfxOk = NULL; }
-    if (sfxBam) { Mix_FreeChunk(sfxBam); sfxBam = NULL; }
-    if (sfxGrass) { Mix_FreeChunk(sfxGrass); sfxGrass = NULL; }
-    if (sfxWind) { Mix_FreeMusic(sfxWind); sfxWind = NULL; }
-
-    destroyTexture(&texBuildings);
-    destroyTexture(&texSlime);
-    destroyTexture(&texMountains);
-    destroyTexture(&texTitle);
-    destroyTexture(&texPaused);
-    destroyTexture(&texGameover);
-    destroyTexture(&texFire);
-    destroyTexture(&texExit);
-    destroyTexture(&texNext);
-    destroyTexture(&texTileset);
 }
 
 Uint32 jumpQueuedTime;
@@ -540,14 +401,23 @@ void updateLevelTransition()
 
     if (elapsed >= EXIT_FRAME_COUNT * EXIT_FRAME_TIME)
     {
-        if (loadLevel("res/map2.tmj"))
+        if (currentLevel == LEVEL_1)
         {
-            transitionStartTime = SDL_GetTicks();
-            gameState = GS_NEXT;
+            if (loadLevel("res/map2.tmj"))
+            {
+                currentLevel = LEVEL_2;
+                transitionStartTime = SDL_GetTicks();
+                gameState = GS_NEXT;
+            }
+            else
+            {
+                gameState = GS_OVER;
+            }
         }
         else
         {
-            gameState = GS_OVER;
+            playSfx(sfxOk);
+            gameState = GS_WIN;
         }
     }
 }
@@ -590,6 +460,12 @@ void update()
         {
             startLevelTransition();
         }
+
+        if (gameState == GS_GAME)
+        {
+            updateActorAnimation(a);
+            updateMapAnimations(m);
+        }
     }
     else if (gameState == GS_PAUSED)
     {
@@ -609,6 +485,10 @@ void update()
         {
             gameState = GS_GAME;
         }
+    }
+    else if (gameState == GS_WIN)
+    {
+
     }
 }
 
@@ -647,6 +527,16 @@ void renderNextScreen()
     renderTexture(r, texNext, SW / 2 - texNext.w / 2, SH / 2 - texNext.h / 2);
 }
 
+void renderWinScreen()
+{
+    SDL_Rect screen = { 0, 0, SW, SH };
+
+    SDL_SetRenderDrawColor(r, 0, 0, 0, 255);
+    SDL_RenderFillRect(r, &screen);
+
+    renderTexture(r, texYouWin, SW / 2 - texYouWin.w / 2, SH / 2 - texYouWin.h / 2);
+}
+
 void render()
 {
     // render
@@ -678,6 +568,10 @@ void render()
     else if (gameState == GS_NEXT)
     {
         renderNextScreen();
+    }
+    else if (gameState == GS_WIN)
+    {
+        renderWinScreen();
     }
 
     SDL_RenderPresent(r);

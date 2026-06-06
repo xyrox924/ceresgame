@@ -90,6 +90,27 @@ static void updateLoopingAnimation(Actor *a)
 	animationAdvanceLoop(&a->frame, a->animSpeed, animationFrameCount(&a->tex, a->w));
 }
 
+void updateActorAnimation(Actor *a)
+{
+	if (!a || !a->animate)
+	{
+		return;
+	}
+
+	if (a->id == ID_PLAYER)
+	{
+		updatePlayerAnimation(a);
+	}
+	else if (a->id == ID_ENEMY)
+	{
+		updateEnemyAnimation(a);
+	}
+	else
+	{
+		updateLoopingAnimation(a);
+	}
+}
+
 Actor *createActorNoTex(float x, float y, float w, float h)
 {
 	Actor *a = (Actor *)malloc(sizeof(Actor));
@@ -134,8 +155,6 @@ Actor *createActorNoTex(float x, float y, float w, float h)
 		a->dead = false;
 		a->dyingugh = 0;
 		a->superdead = false;
-
-		vector_init(a->as);
 
 		return a;
 	}
@@ -190,8 +209,6 @@ Actor *createActor(float x, float y, int w, int h, Texture t)
 		a->dyingugh = 0;
 		a->superdead = false;
 
-		vector_init(a->as);
-
 		return a;
 	}
 	else
@@ -208,8 +225,6 @@ void destroyActor(Actor *a)
 	{
 		destroyTexture(&a->tex);
 	}
-
-	vector_free(a->as);
 
 	free(a);
 }
@@ -341,7 +356,7 @@ void moveX(Actor *a)
 {
 	a->ox = a->body.x;
 
-	// AAAAAAAAAAALL X MOVEMENT
+	// ALL X MOVEMENT
 	// acceleration is in main
 	a->vx += a->ax;
 
@@ -439,17 +454,6 @@ void renderActorOffsetA(SDL_Renderer *r, Actor *a, int x, int y)
 	SDL_RenderDrawRect(r, &hitbox);
 #endif /* DEBUG_H */
 
-	if (a->animate)
-	{
-		if (a->id == ID_ENEMY)
-		{
-			updateEnemyAnimation(a);
-		}
-		else
-		{
-			updateLoopingAnimation(a);
-		}
-	}
 }
 
 void renderActorOffsetAP(SDL_Renderer *r, Actor *a, int x, int y)
@@ -466,8 +470,4 @@ void renderActorOffsetAP(SDL_Renderer *r, Actor *a, int x, int y)
 	SDL_RenderDrawRect(r, &hitbox);
 #endif
 
-	if (a->animate)
-	{
-		updatePlayerAnimation(a);
-	}
 }

@@ -4,10 +4,8 @@
 #include  <SDL.h>
 #include <stdbool.h>
 
-#include "cvector.h"
 #include "texture.h"
 #include "solid.h"
-#include "timer.h"
 
 enum
 {
@@ -18,11 +16,6 @@ enum
 	ID_END,
 	ID_LEDGE
 };
-
-struct AnimState
-{
-	char startFrame, endFrame;
-} typedef AnimState;
 
 struct Actor // these are for colliding with solids
 {
@@ -52,10 +45,8 @@ struct Actor // these are for colliding with solids
 	char id;
 	bool dead;
 
-	float dyingugh; // (kill yourself)
+	float dyingugh; // (terrible)
 	bool superdead;
-
-	vector(AnimState) as; // animstates
 } typedef Actor;
 
 Actor *createActorNoTex(float x, float y, float w, float h);
@@ -74,10 +65,10 @@ void resolveCollisionRectY(Actor *a, const SDL_Rect *s);
 void jump(Actor *a);
 void moveX(Actor *a);
 void moveY(Actor *a);
+void updateActorAnimation(Actor *a);
 void renderActor(SDL_Renderer *r, Actor *a);
 void renderActorOffset(SDL_Renderer *r, Actor *a, int x, int y);
 // animated
-void renderActorA(SDL_Renderer *r, Actor *a);
 void renderActorOffsetA(SDL_Renderer *r, Actor *a, int x, int y);
 void renderActorOffsetAP(SDL_Renderer *r, Actor *a, int x, int y);
 

@@ -8,7 +8,8 @@ enum GameStates
     GS_PAUSED,
     GS_OVER,
     GS_EXIT,
-    GS_NEXT
+    GS_NEXT,
+    GS_WIN
 };
 
 extern char gameState;

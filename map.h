@@ -52,6 +52,7 @@ void loadLayer(cJSON *in, Layer *l, int tsw, int tw, int mw, int mh);
 void populateMap(Map *m);
 void depopulateMap(Map *m);
 void doMapStuff(Map *m, Actor *p);
+void updateMapAnimations(Map *m);
 
 void renderMap(SDL_Renderer *r, Map *m);
 void renderMapOffset(SDL_Renderer *r, Map *m, int x, int y, Actor *a);

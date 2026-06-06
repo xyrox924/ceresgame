@@ -191,14 +191,13 @@ void loadLayer(cJSON *in, Layer *l, int tsw, int tw, int mw, int mh)
 
         l->tiles = malloc(sizeof(SDL_Rect) * l->tileCount);
 
-        // it's so bad
         // populate tiles...
         int j = 0;
         for (int i = 0; i < mw * mh; i++)
         {
             if (l->tileData[i] != 0)
             {
-                // row * th but tw and th are the same so whatever...
+                // row * th but tw and th are the same so it's okay
                 SDL_Rect dest = { i % mw * tw, i / mw * tw, tw, tw };
                 l->tiles[j] = dest;
                 j++;
@@ -390,10 +389,7 @@ void doMapStuff(Map *m, Actor *p)
                 p->vy = -3;
                 p->jumping = true;
                 other->dead = true;
-                if (sfxBam)
-                {
-                    Mix_PlayChannel(-1, sfxBam, 0);
-                }
+                playSfx(sfxBam);
                 return;
             }
         }
@@ -421,6 +417,19 @@ void doMapStuff(Map *m, Actor *p)
                 gameState = GS_EXIT;
             }
         }
+    }
+}
+
+void updateMapAnimations(Map *m)
+{
+    if (!m)
+    {
+        return;
+    }
+
+    for (int i = 0; i < m->actors.size; i++)
+    {
+        updateActorAnimation(vector_at(m->actors, i));
     }
 }
 
@@ -473,6 +482,34 @@ void renderMap(SDL_Renderer *r, Map *m)
     }
 }
 
+static void renderTileLayerOffset(SDL_Renderer *r, Map *m, int layerIndex, int x, int y, Actor *a, int tilesPerRow)
+{
+    Layer *layer = &m->layers[layerIndex];
+
+    if (!layer->tileData)
+    {
+        return;
+    }
+
+    for (int i = 0; i < m->w * m->h; i++)
+    {
+        int tileId = layer->tileData[i];
+        if (tileId <= 0)
+        {
+            continue;
+        }
+
+        if (fabsf((float)(i % m->w * m->tw) - a->body.x) < 208.0f)
+        {
+            int col = (tileId - 1) % tilesPerRow;
+            int row = (tileId - 1) / tilesPerRow;
+            SDL_Rect src = { col * m->tw, row * m->th, m->tw, m->th };
+            SDL_Rect dest = { i % m->w * m->tw + x, i / m->w * m->tw + y, m->tw, m->tw };
+            SDL_RenderCopy(r, m->tileset.data, &src, &dest);
+        }
+    }
+}
+
 void renderMapOffset(SDL_Renderer *r, Map *m, int x, int y, Actor *a)
 {
     if (!m || !a || !m->layers)
@@ -493,8 +530,7 @@ void renderMapOffset(SDL_Renderer *r, Map *m, int x, int y, Actor *a)
         }
     }
 
-    if (!m->tileset.data || m->tw <= 0 || m->th <= 0 || m->layerCount < 2 ||
-        !m->layers[0].tileData || !m->layers[1].tileData)
+    if (!m->tileset.data || m->tw <= 0 || m->th <= 0 || m->layerCount < 2)
     {
         return;
     }
@@ -505,30 +541,8 @@ void renderMapOffset(SDL_Renderer *r, Map *m, int x, int y, Actor *a)
         return;
     }
 
-    for (int i = 0; i < m->w * m->h; i++)
-    {
-        int col = (m->layers[0].tileData[i] - 1) % tilesPerRow; // column in the tileset
-        int row = (m->layers[0].tileData[i] - 1) / tilesPerRow; // row in the tileset
-
-        if (fabsf((float)(i % m->w * m->tw) - a->body.x) < 208.0f) // bad culling
-        {
-            SDL_Rect src = { col * m->tw, row * m->th, m->tw, m->th };
-            SDL_Rect dest = { i % m->w * m->tw + x, i / m->w * m->tw + y, m->tw, m->tw };
-            SDL_RenderCopy(r, m->tileset.data, &src, &dest);
-        }
-    }
-    for (int i = 0; i < m->w * m->h; i++)
-    {
-        int col = (m->layers[1].tileData[i] - 1) % tilesPerRow; // column in the tileset
-        int row = (m->layers[1].tileData[i] - 1) / tilesPerRow; // row in the tileset
-
-        if (fabsf((float)(i % m->w * m->tw) - a->body.x) < 208.0f) // bad culling
-        {
-            SDL_Rect src = { col * m->tw, row * m->th, m->tw, m->th };
-            SDL_Rect dest = { i % m->w * m->tw + x, i / m->w * m->tw + y, m->tw, m->tw };
-            SDL_RenderCopy(r, m->tileset.data, &src, &dest);
-        }
-    }
+    renderTileLayerOffset(r, m, 0, x, y, a, tilesPerRow);
+    renderTileLayerOffset(r, m, 1, x, y, a, tilesPerRow);
 
     for (int i = 0; i < m->actors.size; i++)
     {
@@ -537,41 +551,9 @@ void renderMapOffset(SDL_Renderer *r, Map *m, int x, int y, Actor *a)
             renderActorOffsetA(r, vector_at(m->actors, i), x, y);
         }
     }
-
-    // layer width and height has to be the same as the map for this to be okay
-    /*for (int j = 0; j < m->layerCount; j++)
-    {
-        
-        if (strcmp(m->layers[j].type, "objectgroup") == 0)
-        {
-            for (int i = 0; i < m->actors.size; i++)
-            {
-                if (vector_at(m->actors, i)->id == ID_ENEMY)
-                {
-                    if (!vector_at(m->actors, i)->dead)
-                    {
-                        renderActorOffset(r, vector_at(m->actors, i), x, y);
-                    }
-                }
-            }
-        }
-        else if (strcmp(m->layers[j].type, "tilelayer") == 0)
-        {
-            for (int i = 0; i < m->w * m->h; i++)
-            {
-                int tilesPerRow = m->tileset.w / m->tw; // number of tiles in a row
-                int col = (m->layers[j].tileData[i] - 1) % tilesPerRow; // column in the tileset
-                int row = (m->layers[j].tileData[i] - 1) / tilesPerRow; // row in the tileset
-
-                SDL_Rect src = { col * m->tw, row * m->th, m->tw, m->th };
-                SDL_Rect dest = { i % m->w * m->tw + x, i / m->w * m->tw + y, m->tw, m->tw };
-                SDL_RenderCopy(r, m->tileset.data, &src, &dest);
-            }
-        }
-    }*/
 }
 
-// i hardcodeded it. the index 0, 1 are tiles and 2 is objects
+// i hardcoded it. the index 0, 1 are tiles and 2 is objects
 void resolveMapCollisionsX(Actor *a, Map *m)
 {
     for (int i = 0; i < m->layers[0].tileCount; i++)
