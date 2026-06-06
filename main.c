@@ -416,7 +416,6 @@ void updateLevelTransition()
         }
         else
         {
-            playSfx(sfxOk);
             gameState = GS_WIN;
         }
     }
@@ -458,6 +457,7 @@ void update()
         doMapStuff(m, a);
         if (oldState != GS_EXIT && gameState == GS_EXIT)
         {
+            playSfx(sfxOk);
             startLevelTransition();
         }
 

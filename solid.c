@@ -5,7 +5,7 @@
 
 Solid *createSolid(int x, int y, int w, int h, Texture t)
 {
-	Solid *s = (Solid *)malloc(sizeof(Solid));
+	Solid *s = malloc(sizeof(Solid));
 
 	if (s)
 	{

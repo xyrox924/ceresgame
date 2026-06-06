@@ -113,7 +113,7 @@ void updateActorAnimation(Actor *a)
 
 Actor *createActorNoTex(float x, float y, float w, float h)
 {
-	Actor *a = (Actor *)malloc(sizeof(Actor));
+	Actor *a = malloc(sizeof(Actor));
 
 	if (a)
 	{
@@ -168,7 +168,7 @@ Actor *createActorNoTex(float x, float y, float w, float h)
 
 Actor *createActor(float x, float y, int w, int h, Texture t)
 {
-	Actor *a = (Actor *)malloc(sizeof(Actor));
+	Actor *a = malloc(sizeof(Actor));
 
 	if (a)
 	{
