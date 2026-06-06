@@ -12,6 +12,7 @@ Win32/
 [Rr]elease/
 [Bb]uild/
 [Oo]ut/
+[Dd]ist/
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake

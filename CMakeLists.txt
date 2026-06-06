@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(jsontests_map_remake VERSION 0.1.0 LANGUAGES C)
+project(ceres VERSION 0.1.0 LANGUAGES C)
 
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
-add_executable(jsontests
+add_executable(ceres
     src/actor.c
     src/animation.c
     src/camera.c
@@ -19,11 +19,11 @@ add_executable(jsontests
     src/timer.c
 )
 
-target_include_directories(jsontests PRIVATE
+target_include_directories(ceres PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
     "${CMAKE_CURRENT_SOURCE_DIR}/third_party/cjson"
 )
-target_compile_definitions(jsontests PRIVATE
+target_compile_definitions(ceres PRIVATE
     $<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>
 )
 
@@ -62,37 +62,37 @@ if(NOT TARGET SDL2_mixer::SDL2_mixer)
 endif()
 
 if(TARGET SDL2::SDL2main)
-    target_link_libraries(jsontests PRIVATE SDL2::SDL2main)
+    target_link_libraries(ceres PRIVATE SDL2::SDL2main)
 endif()
 
 if(TARGET SDL2::SDL2)
-    target_link_libraries(jsontests PRIVATE SDL2::SDL2)
+    target_link_libraries(ceres PRIVATE SDL2::SDL2)
 else()
-    target_link_libraries(jsontests PRIVATE PkgConfig::SDL2)
+    target_link_libraries(ceres PRIVATE PkgConfig::SDL2)
 endif()
 
 if(TARGET SDL2_image::SDL2_image)
-    target_link_libraries(jsontests PRIVATE SDL2_image::SDL2_image)
+    target_link_libraries(ceres PRIVATE SDL2_image::SDL2_image)
 else()
-    target_link_libraries(jsontests PRIVATE PkgConfig::SDL2_IMAGE)
+    target_link_libraries(ceres PRIVATE PkgConfig::SDL2_IMAGE)
 endif()
 
 if(TARGET SDL2_mixer::SDL2_mixer)
-    target_link_libraries(jsontests PRIVATE SDL2_mixer::SDL2_mixer)
+    target_link_libraries(ceres PRIVATE SDL2_mixer::SDL2_mixer)
 else()
-    target_link_libraries(jsontests PRIVATE PkgConfig::SDL2_MIXER)
+    target_link_libraries(ceres PRIVATE PkgConfig::SDL2_MIXER)
 endif()
 
 if(UNIX AND NOT APPLE)
-    target_link_libraries(jsontests PRIVATE m)
+    target_link_libraries(ceres PRIVATE m)
 endif()
 
-add_custom_command(TARGET jsontests POST_BUILD
+add_custom_command(TARGET ceres POST_BUILD
     COMMAND "${CMAKE_COMMAND}" -E copy_directory
             "${CMAKE_CURRENT_SOURCE_DIR}/res"
-            "$<TARGET_FILE_DIR:jsontests>/res"
+            "$<TARGET_FILE_DIR:ceres>/res"
     VERBATIM
 )
 
-install(TARGETS jsontests RUNTIME DESTINATION .)
+install(TARGETS ceres RUNTIME DESTINATION .)
 install(DIRECTORY res DESTINATION .)

@@ -1,4 +1,4 @@
-# jsontests map remake
+# ceres
 
 A small SDL2 platformer written in C for an assignment.
 
@@ -24,7 +24,7 @@ Build and run:
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
-./build/jsontests
+./build/ceres
 ```
 
 The build copies `res/` next to the executable, so run the executable from the build output shown above.
@@ -50,18 +50,25 @@ cmake --build build --config Debug
 Run:
 
 ```powershell
-.\build\Debug\jsontests.exe
+.\build\Debug\ceres.exe
 ```
 
-vcpkg reads `vcpkg.json` and installs SDL2, SDL2_image, and SDL2_mixer during the CMake configure/build process.
+## Release Build
 
-The local `vcpkg/` folder is ignored by git and should not be committed.
-
-## Cross-Platform vcpkg Build
-
-If vcpkg is already installed somewhere else, configure CMake with that vcpkg toolchain file:
+On GNU/Linux with system SDL packages:
 
 ```sh
-cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake
-cmake --build build
+cmake -S . -B build-release -DCMAKE_BUILD_TYPE=Release
+cmake --build build-release
+cmake --install build-release --prefix dist
 ```
+
+On Windows with the repo-local vcpkg folder:
+
+```powershell
+cmake -S . -B build-release -DCMAKE_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake
+cmake --build build-release --config Release
+cmake --install build-release --config Release --prefix dist
+```
+
+The `dist/` folder will contain the executable and `res/`. On Windows with vcpkg, required SDL DLLs may still need to be copied from the build output folder into `dist/`.

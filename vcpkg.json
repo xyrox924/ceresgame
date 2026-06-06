@@ -1,5 +1,5 @@
 {
-  "name": "jsontests-map-remake",
+  "name": "ceres",
   "version-string": "0.1.0",
   "dependencies": [
     "sdl2",
