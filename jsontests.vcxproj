@@ -143,6 +143,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="animation.c" />
     <ClCompile Include="actor.c" />
     <ClCompile Include="camera.c" />
     <ClCompile Include="cJSON.c" />
@@ -153,6 +154,7 @@
     <ClCompile Include="timer.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="animation.h" />
     <ClInclude Include="actor.h" />
     <ClInclude Include="camera.h" />
     <ClInclude Include="cJSON.h" />

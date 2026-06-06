@@ -390,7 +390,10 @@ void doMapStuff(Map *m, Actor *p)
                 p->vy = -3;
                 p->jumping = true;
                 other->dead = true;
-                Mix_PlayChannel(-1, sfxBam, 0);
+                if (sfxBam)
+                {
+                    Mix_PlayChannel(-1, sfxBam, 0);
+                }
                 return;
             }
         }
@@ -470,34 +473,6 @@ void renderMap(SDL_Renderer *r, Map *m)
     }
 }
 
-void renderEndFireOffset(SDL_Renderer *r, Actor *a, int x, int y)
-{
-    if (!a || !a->tex.data || a->w <= 0 || a->h <= 0 || a->tex.w < a->w)
-    {
-        return;
-    }
-
-    int frameCount = a->tex.w / a->w;
-    if (frameCount <= 0)
-    {
-        return;
-    }
-
-    int frame = (int)a->frame % frameCount;
-    SDL_Rect src = { frame * a->w, 0, a->w, a->h };
-    SDL_Rect dest = { (int)a->body.x + a->offsetX + x, (int)a->body.y + a->offsetY + y, a->w, a->h };
-    SDL_RenderCopy(r, a->tex.data, &src, &dest);
-
-    if (a->animate)
-    {
-        a->frame += a->animSpeed;
-        if (a->frame >= frameCount)
-        {
-            a->frame = 0;
-        }
-    }
-}
-
 void renderMapOffset(SDL_Renderer *r, Map *m, int x, int y, Actor *a)
 {
     if (!m || !a || !m->layers)
@@ -559,7 +534,7 @@ void renderMapOffset(SDL_Renderer *r, Map *m, int x, int y, Actor *a)
     {
         if (vector_at(m->actors, i)->id == ID_END)
         {
-            renderEndFireOffset(r, vector_at(m->actors, i), x, y);
+            renderActorOffsetA(r, vector_at(m->actors, i), x, y);
         }
     }
 

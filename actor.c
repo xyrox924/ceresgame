@@ -4,12 +4,91 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "animation.h"
+
 #define TERMVEL 2.75f
 #define GRAVITY 0.22f
 #define JUMPSTRENGTH -4.5f
 #define SLOW 0.9f // like air resistance or something.. so he doesn't keep going forever if i let go of the key
 #define TURNSLOW 0.3f // lower is better
 #define VXCUTOFF 0.29f // if smaller than this set vx to 0
+
+static bool renderActorAnimationOffset(SDL_Renderer *r, Actor *a, int x, int y)
+{
+	SDL_Rect dest;
+	SDL_RendererFlip flip;
+
+	if (!a || !animationCanRender(&a->tex, a->w, a->h))
+	{
+		return false;
+	}
+
+	dest.x = (int)floor(a->body.x) + a->offsetX + x;
+	dest.y = (int)floor(a->body.y) + a->offsetY + y;
+	dest.w = a->w;
+	dest.h = a->h;
+	flip = a->flip ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
+
+	return renderAnimationFrame(r, &a->tex, a->w, a->h, a->frame, &dest, flip);
+}
+
+static void updateEnemyAnimation(Actor *a)
+{
+	if (a->dead)
+	{
+		if (a->dyingugh > 2.9f)
+		{
+			a->superdead = true;
+		}
+		if (a->frame > 3.9f)
+		{
+			a->frame = 2;
+		}
+		a->dyingugh += a->animSpeed;
+		a->frame += a->animSpeed * 0.95f;
+	}
+	else
+	{
+		if (a->frame > 1.9f)
+		{
+			a->frame = 0;
+		}
+	}
+
+	a->frame += a->animSpeed;
+}
+
+static void updatePlayerAnimation(Actor *a)
+{
+	if (!a->jumping)
+	{
+		if (a->moving)
+		{
+			if (a->frame == 0)
+			{
+				a->frame = 0.8f;
+			}
+			if (a->frame > 2.9f)
+			{
+				a->frame = 1;
+			}
+			a->frame += a->animSpeed;
+		}
+		else
+		{
+			a->frame = 0;
+		}
+	}
+	else
+	{
+		a->frame = 3;
+	}
+}
+
+static void updateLoopingAnimation(Actor *a)
+{
+	animationAdvanceLoop(&a->frame, a->animSpeed, animationFrameCount(&a->tex, a->w));
+}
 
 Actor *createActorNoTex(float x, float y, float w, float h)
 {
@@ -348,14 +427,10 @@ void renderActorOffset(SDL_Renderer *r, Actor *a, int x, int y)
 
 void renderActorOffsetA(SDL_Renderer *r, Actor *a, int x, int y)
 {
-	if (!a || !a->tex.data || a->tex.w <= 0 || a->w <= 0 || a->h <= 0 || a->tex.w < a->w)
+	if (!renderActorAnimationOffset(r, a, x, y))
 	{
 		return;
 	}
-
-	SDL_Rect src = { a->tex.w / (a->tex.w / a->w) * (int)a->frame, 0, a->w, a->h };
-	SDL_Rect dest = { (int)floor(a->body.x) + a->offsetX + x, (int)floor(a->body.y) + a->offsetY + y, a->w, a->h };
-	SDL_RenderCopyEx(r, a->tex.data, &src, &dest, 0, NULL, a->flip);
 
 #ifdef DEBUG_H
 	// CRINGE DEBUG
@@ -366,40 +441,23 @@ void renderActorOffsetA(SDL_Renderer *r, Actor *a, int x, int y)
 
 	if (a->animate)
 	{
-		if (a->dead)
+		if (a->id == ID_ENEMY)
 		{
-			if (a->dyingugh > 2.9)
-			{
-				a->superdead = true;
-			}
-			if (a->frame > 3.9)
-			{
-				a->frame = 2;
-			}
-			a->dyingugh += a->animSpeed;
-			a->frame += a->animSpeed * 0.95f;
+			updateEnemyAnimation(a);
 		}
 		else
 		{
-			if (a->frame > 1.9)
-			{
-				a->frame = 0;
-			}
+			updateLoopingAnimation(a);
 		}
-		a->frame += a->animSpeed;
 	}
 }
 
 void renderActorOffsetAP(SDL_Renderer *r, Actor *a, int x, int y)
 {
-	if (!a || !a->tex.data || a->tex.w <= 0 || a->w <= 0 || a->h <= 0 || a->tex.w < a->w)
+	if (!renderActorAnimationOffset(r, a, x, y))
 	{
 		return;
 	}
-
-	SDL_Rect src = { a->tex.w / (a->tex.w / a->w) * (int)a->frame, 0, a->w, a->h };
-	SDL_Rect dest = { (int)floor(a->body.x) + a->offsetX + x, (int)floor(a->body.y) + a->offsetY + y, a->w, a->h };
-	SDL_RenderCopyEx(r, a->tex.data, &src, &dest, 0, NULL, a->flip);
 
 #ifdef DEBUG_H
 	// CRINGE DEBUG
@@ -410,29 +468,6 @@ void renderActorOffsetAP(SDL_Renderer *r, Actor *a, int x, int y)
 
 	if (a->animate)
 	{
-		if (!a->jumping)
-		{
-			if (a->moving)
-			{
-				if (a->frame == 0)
-				if (a->frame == 0)
-				{
-					a->frame = 0.8f;
-				}
-				if (a->frame > 2.9)
-				{
-					a->frame = 1;
-				}
-				a->frame += a->animSpeed;
-			}
-			else
-			{
-				a->frame = 0;
-			}
-		}
-		else if (a->jumping)
-		{
-			a->frame = 3;
-		}
+		updatePlayerAnimation(a);
 	}
 }

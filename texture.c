@@ -28,7 +28,7 @@ Texture loadTexture(SDL_Renderer *r, const char *path)
 
 void renderTexture(SDL_Renderer *r, Texture t, int x, int y)
 {
-	if (!t.data)
+	if (!r || !t.data)
 	{
 		return;
 	}
